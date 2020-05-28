@@ -87,7 +87,7 @@ func (model *Model) SVG() string {
 	bg := model.Background
 	var lines []string
 	lines = append(lines, fmt.Sprintf("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"%d\" height=\"%d\">", model.Sw, model.Sh))
-	lines = append(lines, fmt.Sprintf("<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" fill=\"#%02x%02x%02x\" />", model.Sw, model.Sh, bg.R, bg.G, bg.B))
+	lines = append(lines, fmt.Sprintf("<rect x=\"0\" y=\"0\" width=\"%d\" height=\"%d\" fill=\"#%02x%02x%02x%02x\" />", model.Sw, model.Sh, bg.R, bg.G, bg.B, bg.A))
 	lines = append(lines, fmt.Sprintf("<g transform=\"scale(%f) translate(0.5 0.5)\">", model.Scale))
 	for i, shape := range model.Shapes {
 		c := model.Colors[i]
@@ -116,12 +116,14 @@ func (model *Model) Add(shape Shape, alpha int) {
 	shape.Draw(model.Context, model.Scale)
 }
 
-func (model *Model) Step(shapeType ShapeType, alpha, repeat int) int {
-	state := model.runWorkers(shapeType, alpha, 1000, 100, 16)
+func (model *Model) Step(shapeType ShapeType, alpha, repeat, idx int) int {
+	// v("Model Step")
+	state := model.runWorkers(shapeType, alpha, 1000, 100, 16, idx)
 	// state = HillClimb(state, 1000).(*State)
 	model.Add(state.Shape, state.Alpha)
 
 	for i := 0; i < repeat; i++ {
+		v("here")
 		state.Worker.Init(model.Current, model.Score)
 		a := state.Energy()
 		state = HillClimb(state, 100).(*State)
@@ -144,7 +146,7 @@ func (model *Model) Step(shapeType ShapeType, alpha, repeat int) int {
 	return counter
 }
 
-func (model *Model) runWorkers(t ShapeType, a, n, age, m int) *State {
+func (model *Model) runWorkers(t ShapeType, a, n, age, m, idx int) *State {
 	wn := len(model.Workers)
 	ch := make(chan *State, wn)
 	wm := m / wn
@@ -154,7 +156,7 @@ func (model *Model) runWorkers(t ShapeType, a, n, age, m int) *State {
 	for i := 0; i < wn; i++ {
 		worker := model.Workers[i]
 		worker.Init(model.Current, model.Score)
-		go model.runWorker(worker, t, a, n, age, wm, ch)
+		go model.runWorker(worker, t, a, n, age, wm, idx, ch)
 	}
 	var bestEnergy float64
 	var bestState *State
@@ -169,6 +171,6 @@ func (model *Model) runWorkers(t ShapeType, a, n, age, m int) *State {
 	return bestState
 }
 
-func (model *Model) runWorker(worker *Worker, t ShapeType, a, n, age, m int, ch chan *State) {
-	ch <- worker.BestHillClimbState(t, a, n, age, m)
+func (model *Model) runWorker(worker *Worker, t ShapeType, a, n, age, m, idx int, ch chan *State) {
+	ch <- worker.BestHillClimbState(t, a, n, age, m, idx)
 }
