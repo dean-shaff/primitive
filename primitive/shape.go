@@ -10,6 +10,11 @@ type Shape interface {
 	SVG(attrs string) string
 }
 
+type BlueDotSessionsShapeConfig struct {
+	QuadPercent float64
+	StartTriangles int
+}
+
 type ShapeType int
 
 const (

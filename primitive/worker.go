@@ -53,12 +53,12 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 	return differencePartial(worker.Target, worker.Current, worker.Buffer, worker.Score, lines)
 }
 
-func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int) *State {
+func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int, fn NewShapeFunc) *State {
 	var bestEnergy float64
 	var bestState *State
 	vv("BestHillClimbState: n=%d, m=%d\n", n, m)
 	for i := 0; i < m; i++ {
-		state := worker.BestRandomState(t, a, n, idx)
+		state := worker.BestRandomState(t, a, n, idx, fn)
 		before := state.Energy()
 		state = HillClimb(state, age).(*State)
 		energy := state.Energy()
@@ -71,11 +71,11 @@ func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int) *St
 	return bestState
 }
 
-func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int) *State {
+func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFunc) *State {
 	var bestEnergy float64
 	var bestState *State
 	for i := 0; i < n; i++ {
-		state := worker.RandomState(t, a, idx)
+		state := worker.RandomState(t, a, idx, fn)
 		energy := state.Energy()
 		if i == 0 || energy < bestEnergy {
 			bestEnergy = energy
@@ -85,11 +85,29 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int) *State {
 	return bestState
 }
 
-func (worker *Worker) RandomState(t ShapeType, a, idx int) *State {
+func NewBlueDotSessionsShapeFactory (quadPercent float64, startTriangles int) NewShapeFunc {
+	return func (worker *Worker, a, idx int) Shape {
+		if idx < startTriangles {
+			return NewRandomTriangle(worker)
+		} else {
+			var rflt float64 = worker.Rnd.Float64()
+			if (rflt < quadPercent) {
+				return NewRandomTriangle(worker)
+			} else {
+				return NewRandomPolygon(worker, 4, false)
+			}
+		}
+	}
+}
+
+type NewShapeFunc func(worker* Worker, a, idx int) Shape
+
+
+func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *State {
 	// vv("RandomState: a=%d\n", a)
 	switch t {
 	default:
-		return worker.RandomState(ShapeType(worker.Rnd.Intn(8)+1), a, idx)
+		return worker.RandomState(ShapeType(worker.Rnd.Intn(8)+1), a, idx, fn)
 	case ShapeTypeTriangle:
 		return NewState(worker, NewRandomTriangle(worker), a)
 	case ShapeTypeRectangle:
@@ -107,10 +125,6 @@ func (worker *Worker) RandomState(t ShapeType, a, idx int) *State {
 	case ShapeTypePolygon:
 		return NewState(worker, NewRandomPolygon(worker, 4, false), a)
 	case ShapeTypeBlueDotSessions:
-		if idx < 3 {
-			return NewState(worker, NewRandomTriangle(worker), a)
-		} else {
-			return NewState(worker, NewRandomPolygon(worker, 4, false), a)
-		}
+		return NewState(worker, fn(worker, a, idx), a)
 	}
 }

@@ -24,7 +24,7 @@ var (
 	Alpha      int
 	InputSize  int
 	OutputSize int
-	Mode       int
+	Mode       string
 	Workers    int
 	Nth        int
 	Repeat     int
@@ -44,7 +44,7 @@ func (i *flagArray) Set(value string) error {
 
 type shapeConfig struct {
 	Count  int
-	Mode   int
+	Mode   string
 	Alpha  int
 	Repeat int
 }
@@ -69,7 +69,7 @@ func init() {
 	flag.IntVar(&Alpha, "a", 128, "alpha value")
 	flag.IntVar(&InputSize, "r", 256, "resize large input images to this size")
 	flag.IntVar(&OutputSize, "s", 1024, "output image size")
-	flag.IntVar(&Mode, "m", 1, "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
+	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
 	flag.IntVar(&Workers, "j", 0, "number of parallel workers (default uses all cores)")
 	flag.IntVar(&Nth, "nth", 1, "save every Nth frame (put \"%d\" in path)")
 	flag.IntVar(&Repeat, "rep", 0, "add N extra shapes per iteration with reduced search")
@@ -87,6 +87,25 @@ func check(err error) {
 		log.Fatal(err)
 	}
 }
+
+func parseBlueDotSessionsModeParams (modeStr string) (int, float64, int) {
+	split := strings.Split(modeStr, ":")
+	mode, err := strconv.Atoi(split[0])
+	check(err)
+	var startTriangles int  = 3
+	var quadPercent float64  = 0.5
+	if len(split) == 2 {
+		quadPercent, err = strconv.ParseFloat(split[1], 64)
+		check(err)
+	} else if len(split) == 3 {
+		quadPercent, err = strconv.ParseFloat(split[1], 64)
+		check(err)
+		startTriangles, err = strconv.Atoi(split[2])
+		check(err)
+	}
+	return mode, quadPercent, startTriangles
+}
+
 
 func main() {
 	// parse and validate arguments
@@ -158,16 +177,29 @@ func main() {
 	primitive.Log(1, "%d: t=%.3f, score=%.6f\n", 0, 0.0, model.Score)
 	start := time.Now()
 	frame := 0
+	var mode int
+	var quadPercent float64 = 0.5
+	var startTriangles int = 3
+
 	for j, config := range Configs {
-		primitive.Log(1, "count=%d, mode=%d, alpha=%d, repeat=%d\n",
+		primitive.Log(1, "count=%d, mode=%s, alpha=%d, repeat=%d\n",
 			config.Count, config.Mode, config.Alpha, config.Repeat)
+
+		if (strings.IndexAny(config.Mode, ":") != -1) {
+			mode, quadPercent, startTriangles = parseBlueDotSessionsModeParams(config.Mode)
+		} else {
+			mode, err = strconv.Atoi(config.Mode)
+			check(err)
+		}
+		newShapeFunc := primitive.NewBlueDotSessionsShapeFactory(quadPercent, startTriangles)
+		primitive.Log(1, "parsed mode=%d\n",  mode)
+
 
 		for i := 0; i < config.Count; i++ {
 			frame++
-
 			// find optimal shape and add it to the model
 			t := time.Now()
-			n := model.Step(primitive.ShapeType(config.Mode), config.Alpha, config.Repeat, i)
+			n := model.Step(primitive.ShapeType(mode), config.Alpha, config.Repeat, i, newShapeFunc)
 			nps := primitive.NumberString(float64(n) / time.Since(t).Seconds())
 			elapsed := time.Since(start).Seconds()
 			primitive.Log(1, "%d: t=%.3f, score=%.6f, n=%d, n/s=%s\n", frame, elapsed, model.Score, n, nps)
