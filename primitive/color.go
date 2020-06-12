@@ -2,12 +2,22 @@ package primitive
 
 import (
 	"fmt"
+	"math"
 	"image/color"
 	"strings"
 )
 
 type Color struct {
 	R, G, B, A int
+}
+
+func RGBADiffColor(c0, c1 Color) float64 {
+	var diff float64 = 0.0
+	diff += math.Pow(float64(c0.R + c1.R), 2)
+	diff += math.Pow(float64(c0.G + c1.G), 2)
+	diff += math.Pow(float64(c0.B + c1.B), 2)
+	diff = math.Sqrt(diff) / math.Sqrt(3*(math.Pow(256, 2)))
+	return diff
 }
 
 func MakeColor(c color.Color) Color {

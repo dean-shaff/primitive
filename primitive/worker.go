@@ -44,10 +44,16 @@ func (worker *Worker) Init(current *image.RGBA, score float64) {
 }
 
 func (worker *Worker) Energy(shape Shape, alpha int) float64 {
+	black := Color{0, 0, 0, alpha}
 	worker.Counter++
 	lines := shape.Rasterize()
 	// worker.Heatmap.Add(lines)
 	color := computeColor(worker.Target, worker.Current, lines, alpha)
+	diff := RGBADiffColor(color, black)
+	if diff < 0.25 {
+		// v("color={%d, %d, %d, %d}\n", color.R, color.G, color.B, color.A)
+		return 1.0
+	}
 	copyLines(worker.Buffer, worker.Current, lines)
 	drawLines(worker.Buffer, color, lines)
 	return differencePartial(worker.Target, worker.Current, worker.Buffer, worker.Score, lines)
@@ -87,14 +93,15 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFun
 
 func NewBlueDotSessionsShapeFactory (quadPercent float64, startTriangles int) NewShapeFunc {
 	return func (worker *Worker, a, idx int) Shape {
+		// vv("NewBlueDotSessionsShapeFactory")
 		if idx < startTriangles {
 			return NewRandomTriangle(worker)
 		} else {
 			var rflt float64 = worker.Rnd.Float64()
 			if (rflt < quadPercent) {
-				return NewRandomTriangle(worker)
-			} else {
 				return NewRandomPolygon(worker, 4, false)
+			} else {
+				return NewRandomTriangle(worker)
 			}
 		}
 	}
@@ -123,7 +130,7 @@ func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *Sta
 	case ShapeTypeRotatedEllipse:
 		return NewState(worker, NewRandomRotatedEllipse(worker), a)
 	case ShapeTypePolygon:
-		return NewState(worker, NewRandomPolygon(worker, 4, false), a)
+		return NewState(worker, NewRandomPolygon(worker, 4, true), a)
 	case ShapeTypeBlueDotSessions:
 		return NewState(worker, fn(worker, a, idx), a)
 	}

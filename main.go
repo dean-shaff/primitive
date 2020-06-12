@@ -22,6 +22,7 @@ var (
 	Background string
 	Configs    shapeConfigArray
 	Alpha      int
+	BlackCutOff float64
 	InputSize  int
 	OutputSize int
 	Mode       string
@@ -67,6 +68,7 @@ func init() {
 	flag.Var(&Configs, "n", "number of primitives")
 	flag.StringVar(&Background, "bg", "", "background color (hex)")
 	flag.IntVar(&Alpha, "a", 128, "alpha value")
+	flag.Float64Var(&BlackCutOff, "k", 0.25, "black cut off threshold")
 	flag.IntVar(&InputSize, "r", 256, "resize large input images to this size")
 	flag.IntVar(&OutputSize, "s", 1024, "output image size")
 	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
