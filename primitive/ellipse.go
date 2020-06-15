@@ -98,6 +98,10 @@ func (c *Ellipse) Rasterize() []Scanline {
 	}
 	return lines
 }
+func (c *Ellipse) Area() float64 {
+	return 1.0
+}
+
 
 type RotatedEllipse struct {
 	Worker *Worker
@@ -176,4 +180,8 @@ func (c *RotatedEllipse) Rasterize() []Scanline {
 		path.Add2(fixp(cx+c.X, cy+c.Y), fixp(x2+c.X, y2+c.Y))
 	}
 	return fillPath(c.Worker, path)
+}
+
+func (c *RotatedEllipse) Area() float64 {
+	return 1.0
 }

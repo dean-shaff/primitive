@@ -108,6 +108,11 @@ func (t *Triangle) Rasterize() []Scanline {
 	return cropScanlines(lines, t.Worker.W, t.Worker.H)
 }
 
+func (t *Triangle) Area() float64 {
+	return 1.0
+}
+
+
 func rasterizeTriangle(x1, y1, x2, y2, x3, y3 int, buf []Scanline) []Scanline {
 	if y1 > y3 {
 		x1, x3 = x3, x1

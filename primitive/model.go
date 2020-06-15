@@ -37,7 +37,7 @@ func NewModel(target image.Image, background Color, size, numWorkers int, blackT
 		sh = size
 		scale = float64(size) / float64(h)
 	}
-
+	vv("NewModel: w=%d, h=%d\n", w, h)
 	model := &Model{}
 	model.Sw = sw
 	model.Sh = sh

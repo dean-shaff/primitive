@@ -5,6 +5,9 @@ import (
 	"math"
 )
 
+
+
+
 func computeColor(target, current *image.RGBA, lines []Scanline, alpha int) Color {
 	var rsum, gsum, bsum, count int64
 	a := 0x101 * 255 / alpha

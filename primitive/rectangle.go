@@ -77,6 +77,11 @@ func (r *Rectangle) Rasterize() []Scanline {
 	return lines
 }
 
+func (r *Rectangle) Area() float64 {
+	return -1.0
+}
+
+
 type RotatedRectangle struct {
 	Worker *Worker
 	X, Y   int
@@ -195,4 +200,8 @@ func (r *RotatedRectangle) Rasterize() []Scanline {
 		}
 	}
 	return lines
+}
+
+func (r *RotatedRectangle) Area() float64 {
+	return -1.0
 }

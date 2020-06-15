@@ -98,3 +98,7 @@ func (q *Quadratic) Rasterize() []Scanline {
 	width := fix(q.Width)
 	return strokePath(q.Worker, path, width, raster.RoundCapper, raster.RoundJoiner)
 }
+
+func (r *Quadratic) Area() float64 {
+	return -1.0
+}

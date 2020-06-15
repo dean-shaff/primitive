@@ -3,6 +3,7 @@ package primitive
 import (
 	"fmt"
 	"strings"
+	"math"
 
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/raster"
@@ -119,4 +120,25 @@ func (p *Polygon) Rasterize() []Scanline {
 		}
 	}
 	return fillPath(p.Worker, path)
+}
+
+
+func (p *Polygon) Area() float64 {
+
+	x := p.X
+	y := p.Y
+	x = append(x, x[0])
+	y = append(y, y[0])
+
+	order := len(x)
+	// var area float64 = p.X[order - 1]*p.X[0] - p.X[0]*p.Y[order - 1]
+	var area float64 = 0.0
+
+	for idx := 0; idx < order - 1; idx++ {
+		area += x[idx]*y[idx + 1] - x[idx + 1]*y[idx]
+	}
+
+	area = math.Abs(area)/2.0
+
+	return area
 }

@@ -37,6 +37,7 @@ func NewWorker(target *image.RGBA, blackThresh, areaThresh float64) *Worker {
 	worker.Rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 	worker.BlackThresh = blackThresh
 	worker.AreaThresh = areaThresh
+	vv("NewWorker: BlackThresh=%.2f, AreaThresh=%.2f\n", worker.BlackThresh, worker.AreaThresh)
 	return &worker
 }
 
@@ -55,9 +56,20 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 	color := computeColor(worker.Target, worker.Current, lines, alpha)
 	diff := RGBADiffColor(color, black)
 	if diff < worker.BlackThresh {
-		// v("color={%d, %d, %d, %d}\n", color.R, color.G, color.B, color.A)
 		return 1.0
 	}
+	if worker.AreaThresh > 0.0 {
+		area := shape.Area()
+		if area != -1 {
+			total_area := float64(worker.H * worker.W)
+			frac := area / total_area
+			if frac > worker.AreaThresh {
+				// vv("Energy: area=%.2f, total area=%.2f, frac=%.2f\n", area, total_area, frac)
+				return 1.0
+			}
+		}
+	}
+
 	copyLines(worker.Buffer, worker.Current, lines)
 	drawLines(worker.Buffer, color, lines)
 	return differencePartial(worker.Target, worker.Current, worker.Buffer, worker.Score, lines)
@@ -70,9 +82,11 @@ func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int, fn 
 	for i := 0; i < m; i++ {
 		state := worker.BestRandomState(t, a, n, idx, fn)
 		before := state.Energy()
+		area_before := state.Shape.Area()
 		state = HillClimb(state, age).(*State)
 		energy := state.Energy()
-		vv("%dx random: %.6f -> %dx hill climb: %.6f\n", n, before, age, energy)
+		area_after := state.Shape.Area()
+		vv("%dx random: %.6f -> %dx hill climb: %.6f (area %.1f -> %.1f)\n", n, before, age, energy, area_before, area_after)
 		if i == 0 || energy < bestEnergy {
 			bestEnergy = energy
 			bestState = state
@@ -87,6 +101,7 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFun
 	for i := 0; i < n; i++ {
 		state := worker.RandomState(t, a, idx, fn)
 		energy := state.Energy()
+		// vv("BestRandomState: energy=%.2f, bestEnergy=%.2f\n", energy, bestEnergy)
 		if i == 0 || energy < bestEnergy {
 			bestEnergy = energy
 			bestState = state
