@@ -18,10 +18,12 @@ type Worker struct {
 	Heatmap    *Heatmap
 	Rnd        *rand.Rand
 	Score      float64
+	BlackThresh float64
+	AreaThresh float64
 	Counter    int
 }
 
-func NewWorker(target *image.RGBA) *Worker {
+func NewWorker(target *image.RGBA, blackThresh, areaThresh float64) *Worker {
 	w := target.Bounds().Size().X
 	h := target.Bounds().Size().Y
 	worker := Worker{}
@@ -33,6 +35,8 @@ func NewWorker(target *image.RGBA) *Worker {
 	worker.Lines = make([]Scanline, 0, 4096) // TODO: based on height
 	worker.Heatmap = NewHeatmap(w, h)
 	worker.Rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+	worker.BlackThresh = blackThresh
+	worker.AreaThresh = areaThresh
 	return &worker
 }
 
@@ -50,7 +54,7 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 	// worker.Heatmap.Add(lines)
 	color := computeColor(worker.Target, worker.Current, lines, alpha)
 	diff := RGBADiffColor(color, black)
-	if diff < 0.25 {
+	if diff < worker.BlackThresh {
 		// v("color={%d, %d, %d, %d}\n", color.R, color.G, color.B, color.A)
 		return 1.0
 	}

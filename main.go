@@ -22,7 +22,8 @@ var (
 	Background string
 	Configs    shapeConfigArray
 	Alpha      int
-	BlackCutOff float64
+	BlackThresh float64
+	AreaThresh float64
 	InputSize  int
 	OutputSize int
 	Mode       string
@@ -68,7 +69,8 @@ func init() {
 	flag.Var(&Configs, "n", "number of primitives")
 	flag.StringVar(&Background, "bg", "", "background color (hex)")
 	flag.IntVar(&Alpha, "a", 128, "alpha value")
-	flag.Float64Var(&BlackCutOff, "k", 0.25, "black cut off threshold")
+	flag.Float64Var(&BlackThresh, "kt", 0.0, "black cut off threshold")
+	flag.Float64Var(&AreaThresh, "at", 0.0, "area cut off threshold")
 	flag.IntVar(&InputSize, "r", 256, "resize large input images to this size")
 	flag.IntVar(&OutputSize, "s", 1024, "output image size")
 	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
@@ -175,7 +177,7 @@ func main() {
 
 	// run algorithm
 	primitive.Log(1, "Background=%s, bg=%s\n", Background, bg)
-	model := primitive.NewModel(input, bg, OutputSize, Workers)
+	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, AreaThresh)
 	primitive.Log(1, "%d: t=%.3f, score=%.6f\n", 0, 0.0, model.Score)
 	start := time.Now()
 	frame := 0
