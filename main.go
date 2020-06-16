@@ -14,6 +14,7 @@ import (
 
 	"./primitive"
 	"github.com/nfnt/resize"
+	// "github.com/pkg/profile"
 )
 
 var (
@@ -112,6 +113,7 @@ func parseBlueDotSessionsModeParams (modeStr string) (int, float64, int) {
 
 
 func main() {
+	// defer profile.Start().Stop()
 	// parse and validate arguments
 	flag.Parse()
 	ok := true
@@ -176,7 +178,7 @@ func main() {
 	}
 
 	// run algorithm
-	primitive.Log(1, "Background=%s, bg=%s\n", Background, bg)
+	// primitive.Log(1, "Background=%s, bg=%s\n", Background, bg)
 	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, AreaThresh)
 	primitive.Log(1, "%d: t=%.3f, score=%.6f\n", 0, 0.0, model.Score)
 	start := time.Now()

@@ -109,7 +109,7 @@ func (t *Triangle) Rasterize() []Scanline {
 }
 
 func (t *Triangle) Area() float64 {
-	return (t.X1 - t.X0)*(t.Y2 - t.Y0) - (t.X2 - t.X0)*(t.Y1 - t.Y0)
+	return math.Abs(float64((t.X2 - t.X1)*(t.Y3 - t.Y1) - (t.X3 - t.X1)*(t.Y2 - t.Y1)))/2.0
 }
 
 

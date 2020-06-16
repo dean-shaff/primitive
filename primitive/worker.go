@@ -118,7 +118,7 @@ func NewBlueDotSessionsShapeFactory (quadPercent float64, startTriangles int) Ne
 		} else {
 			var rflt float64 = worker.Rnd.Float64()
 			if (rflt < quadPercent) {
-				return NewRandomPolygon(worker, 4, false)
+				return NewRandomPolygon(worker, 4, true)
 			} else {
 				return NewRandomTriangle(worker)
 			}
