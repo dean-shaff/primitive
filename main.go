@@ -25,12 +25,16 @@ var (
 	Alpha      int
 	BlackThresh float64
 	AreaThresh float64
+	Age int
+	ShapeTrials int
+	HillClimbTrials int
 	InputSize  int
 	OutputSize int
 	Mode       string
 	Workers    int
 	Nth        int
 	Repeat     int
+	Seed  int64
 	V, VV      bool
 )
 
@@ -77,7 +81,11 @@ func init() {
 	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
 	flag.IntVar(&Workers, "j", 0, "number of parallel workers (default uses all cores)")
 	flag.IntVar(&Nth, "nth", 1, "save every Nth frame (put \"%d\" in path)")
+	flag.IntVar(&ShapeTrials, "st", 1000, "Number of shapes to generate before applying Hill Climb algorithm")
+	flag.IntVar(&HillClimbTrials, "hct", 16, "Number of times to use Hill Climb algorithm per shape")
+	flag.IntVar(&Age, "age", 100, "age parameter for Hill Climb Algorithm")
 	flag.IntVar(&Repeat, "rep", 0, "add N extra shapes per iteration with reduced search")
+	flag.Int64Var(&Seed, "seed", -1, "Random number seed")
 	flag.BoolVar(&V, "v", false, "verbose")
 	flag.BoolVar(&VV, "vv", false, "very verbose")
 }
@@ -151,7 +159,11 @@ func main() {
 	}
 
 	// seed random number generator
-	rand.Seed(time.Now().UTC().UnixNano())
+	if Seed == -1 {
+		rand.Seed(time.Now().UTC().UnixNano())
+	} else {
+		rand.Seed(Seed)
+	}
 
 	// determine worker count
 	if Workers < 1 {
@@ -179,7 +191,7 @@ func main() {
 
 	// run algorithm
 	// primitive.Log(1, "Background=%s, bg=%s\n", Background, bg)
-	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, AreaThresh)
+	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, AreaThresh, Seed)
 	primitive.Log(1, "%d: t=%.3f, score=%.6f\n", 0, 0.0, model.Score)
 	start := time.Now()
 	frame := 0
@@ -205,7 +217,7 @@ func main() {
 			frame++
 			// find optimal shape and add it to the model
 			t := time.Now()
-			n := model.Step(primitive.ShapeType(mode), config.Alpha, config.Repeat, i, newShapeFunc)
+			n := model.Step(primitive.ShapeType(mode), config.Alpha, config.Repeat, i, ShapeTrials, Age, HillClimbTrials, newShapeFunc)
 			nps := primitive.NumberString(float64(n) / time.Since(t).Seconds())
 			elapsed := time.Since(start).Seconds()
 			primitive.Log(1, "%d: t=%.3f, score=%.6f, n=%d, n/s=%s\n", frame, elapsed, model.Score, n, nps)

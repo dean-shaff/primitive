@@ -22,7 +22,7 @@ type Model struct {
 	Workers    []*Worker
 }
 
-func NewModel(target image.Image, background Color, size, numWorkers int, blackThresh, areaThresh float64) *Model {
+func NewModel(target image.Image, background Color, size, numWorkers int, blackThresh, areaThresh float64, seed int64) *Model {
 	w := target.Bounds().Size().X
 	h := target.Bounds().Size().Y
 	aspect := float64(w) / float64(h)
@@ -48,7 +48,7 @@ func NewModel(target image.Image, background Color, size, numWorkers int, blackT
 	model.Score = differenceFull(model.Target, model.Current)
 	model.Context = model.newContext()
 	for i := 0; i < numWorkers; i++ {
-		worker := NewWorker(model.Target, blackThresh, areaThresh)
+		worker := NewWorker(model.Target, blackThresh, areaThresh, seed+int64(i))
 		model.Workers = append(model.Workers, worker)
 	}
 	return model
@@ -116,9 +116,10 @@ func (model *Model) Add(shape Shape, alpha int) {
 	shape.Draw(model.Context, model.Scale)
 }
 
-func (model *Model) Step(shapeType ShapeType, alpha, repeat, idx int, fn NewShapeFunc) int {
+func (model *Model) Step(shapeType ShapeType, alpha, repeat, idx, shapeTrials, age, hillClimbTrials int, fn NewShapeFunc) int {
 	// v("Model Step")
-	state := model.runWorkers(shapeType, alpha, 1000, 100, 16, idx, fn)
+	//
+	state := model.runWorkers(shapeType, alpha, shapeTrials, age, hillClimbTrials, idx, fn)
 	// state = HillClimb(state, 1000).(*State)
 	model.Add(state.Shape, state.Alpha)
 

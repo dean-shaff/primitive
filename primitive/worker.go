@@ -23,7 +23,7 @@ type Worker struct {
 	Counter    int
 }
 
-func NewWorker(target *image.RGBA, blackThresh, areaThresh float64) *Worker {
+func NewWorker(target *image.RGBA, blackThresh, areaThresh float64, seed int64) *Worker {
 	w := target.Bounds().Size().X
 	h := target.Bounds().Size().Y
 	worker := Worker{}
@@ -34,7 +34,11 @@ func NewWorker(target *image.RGBA, blackThresh, areaThresh float64) *Worker {
 	worker.Rasterizer = raster.NewRasterizer(w, h)
 	worker.Lines = make([]Scanline, 0, 4096) // TODO: based on height
 	worker.Heatmap = NewHeatmap(w, h)
-	worker.Rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+	if seed == -1 {
+		seed = time.Now().UnixNano()
+	}
+	vv("NewWorker: seed=%d\n", seed)
+	worker.Rnd = rand.New(rand.NewSource(seed))
 	worker.BlackThresh = blackThresh
 	worker.AreaThresh = areaThresh
 	vv("NewWorker: BlackThresh=%.2f, AreaThresh=%.2f\n", worker.BlackThresh, worker.AreaThresh)
