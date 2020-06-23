@@ -19,11 +19,12 @@ type Worker struct {
 	Rnd        *rand.Rand
 	Score      float64
 	BlackThresh float64
-	AreaThresh float64
+	LowerAreaThresh float64
+	UpperAreaThresh float64
 	Counter    int
 }
 
-func NewWorker(target *image.RGBA, blackThresh, areaThresh float64, seed int64) *Worker {
+func NewWorker(target *image.RGBA, blackThresh, lowerAreaThresh, upperAreaThresh float64, seed int64) *Worker {
 	w := target.Bounds().Size().X
 	h := target.Bounds().Size().Y
 	worker := Worker{}
@@ -40,8 +41,9 @@ func NewWorker(target *image.RGBA, blackThresh, areaThresh float64, seed int64) 
 	vv("NewWorker: seed=%d\n", seed)
 	worker.Rnd = rand.New(rand.NewSource(seed))
 	worker.BlackThresh = blackThresh
-	worker.AreaThresh = areaThresh
-	vv("NewWorker: BlackThresh=%.2f, AreaThresh=%.2f\n", worker.BlackThresh, worker.AreaThresh)
+	worker.UpperAreaThresh = upperAreaThresh
+	worker.LowerAreaThresh = lowerAreaThresh
+	vv("NewWorker: BlackThresh=%.2f, LowerAreaThresh=%.2f, UpperAreaThresh=%.2f\n", worker.BlackThresh, worker.LowerAreaThresh, worker.UpperAreaThresh)
 	return &worker
 }
 
@@ -62,12 +64,12 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 	if diff < worker.BlackThresh {
 		return 1.0
 	}
-	if worker.AreaThresh > 0.0 {
+	if worker.UpperAreaThresh > 0.0 {
 		area := shape.Area()
 		if area != -1 {
 			total_area := float64(worker.H * worker.W)
 			frac := area / total_area
-			if frac > worker.AreaThresh {
+			if frac > worker.UpperAreaThresh || frac < worker.LowerAreaThresh {
 				// vv("Energy: area=%.2f, total area=%.2f, frac=%.2f\n", area, total_area, frac)
 				return 1.0
 			}

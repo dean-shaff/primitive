@@ -24,7 +24,7 @@ var (
 	Configs    shapeConfigArray
 	Alpha      int
 	BlackThresh float64
-	AreaThresh float64
+	AreaThresh string
 	Age int
 	ShapeTrials int
 	HillClimbTrials int
@@ -75,7 +75,7 @@ func init() {
 	flag.StringVar(&Background, "bg", "", "background color (hex)")
 	flag.IntVar(&Alpha, "a", 128, "alpha value")
 	flag.Float64Var(&BlackThresh, "kt", 0.0, "black cut off threshold")
-	flag.Float64Var(&AreaThresh, "at", 0.0, "area cut off threshold")
+	flag.StringVar(&AreaThresh, "at", "0.0", "area cut off threshold. Can specify a single value for upper threshold, or comma separated values for both lower and upper thresholds")
 	flag.IntVar(&InputSize, "r", 256, "resize large input images to this size")
 	flag.IntVar(&OutputSize, "s", 1024, "output image size")
 	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions")
@@ -117,6 +117,22 @@ func parseBlueDotSessionsModeParams (modeStr string) (int, float64, int) {
 		check(err)
 	}
 	return mode, quadPercent, startTriangles
+}
+
+func parseAreaThresh (areaThresh string) (float64, float64) {
+	split := strings.Split(areaThresh, ",")
+	if len(split) == 1 {
+		upperAreaThresh, err := strconv.ParseFloat(split[0], 64)
+		check(err)
+		return 0.0, upperAreaThresh
+	} else if len(split) == 2 {
+		lowerAreaThresh, err := strconv.ParseFloat(split[0], 64)
+		check(err)
+		upperAreaThresh, err := strconv.ParseFloat(split[1], 64)
+		check(err)
+		return lowerAreaThresh, upperAreaThresh
+	}
+	return 0.0, 0.0
 }
 
 
@@ -189,9 +205,10 @@ func main() {
 		bg = primitive.MakeHexColor(Background)
 	}
 
+	lowerAreaThresh, upperAreaThresh := parseAreaThresh(AreaThresh)
 	// run algorithm
 	// primitive.Log(1, "Background=%s, bg=%s\n", Background, bg)
-	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, AreaThresh, Seed)
+	model := primitive.NewModel(input, bg, OutputSize, Workers, BlackThresh, lowerAreaThresh, upperAreaThresh, Seed)
 	primitive.Log(1, "%d: t=%.3f, score=%.6f\n", 0, 0.0, model.Score)
 	start := time.Now()
 	frame := 0
