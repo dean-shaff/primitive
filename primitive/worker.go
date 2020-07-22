@@ -72,6 +72,8 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 			if frac > worker.UpperAreaThresh || frac < worker.LowerAreaThresh {
 				// vv("Energy: area=%.2f, total area=%.2f, frac=%.2f\n", area, total_area, frac)
 				return 1.0
+			} else {
+				vv("Energy: area=%.2f, total area=%.2f, frac=%.2f\n", area, total_area, frac)
 			}
 		}
 	}
@@ -107,7 +109,7 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFun
 	for i := 0; i < n; i++ {
 		state := worker.RandomState(t, a, idx, fn)
 		energy := state.Energy()
-		// vv("BestRandomState: energy=%.2f, bestEnergy=%.2f\n", energy, bestEnergy)
+		// vv("BestRandomState: i=%d energy=%.2f, bestEnergy=%.2f\n", i, energy, bestEnergy)
 		if i == 0 || energy < bestEnergy {
 			bestEnergy = energy
 			bestState = state
@@ -116,18 +118,13 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFun
 	return bestState
 }
 
-func NewBlueDotSessionsShapeFactory (quadPercent float64, startTriangles int) NewShapeFunc {
+func NewBlueDotSessionsShapeFactory (startRect int, endRect int) NewShapeFunc {
 	return func (worker *Worker, a, idx int) Shape {
 		// vv("NewBlueDotSessionsShapeFactory")
-		if idx < startTriangles {
-			return NewRandomTriangle(worker)
+		if (idx >= startRect && idx <= endRect) {
+			return NewRandomRotatedRectangle(worker)
 		} else {
-			var rflt float64 = worker.Rnd.Float64()
-			if (rflt < quadPercent) {
-				return NewRandomPolygon(worker, 4, true)
-			} else {
-				return NewRandomTriangle(worker)
-			}
+			return NewRandomPolygon(worker, 4, true)
 		}
 	}
 }
@@ -155,8 +152,13 @@ func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *Sta
 	case ShapeTypeRotatedEllipse:
 		return NewState(worker, NewRandomRotatedEllipse(worker), a)
 	case ShapeTypePolygon:
-		return NewState(worker, NewRandomPolygon(worker, 4, true), a)
+		return NewState(worker, NewRandomPolygon(worker, worker.Rnd.Intn(4)+3, true), a)
 	case ShapeTypeBlueDotSessions:
 		return NewState(worker, fn(worker, a, idx), a)
+	case ShapeTypeRightFacingTriangle:
+		return NewState(worker, NewRandomRFTriangle(worker), a)
+	case ShapeTypeBDSPolygon:
+		return NewState(worker, NewRandomBDSPolygon(worker, 4, true), a)
+
 	}
 }

@@ -78,7 +78,10 @@ func (r *Rectangle) Rasterize() []Scanline {
 }
 
 func (r *Rectangle) Area() float64 {
-	return -1.0
+	x1, y1, x2, y2 := r.bounds()
+	w := x2 - x1 + 1
+	h := y2 - y1 + 1
+	return float64(w*h)
 }
 
 
@@ -203,5 +206,5 @@ func (r *RotatedRectangle) Rasterize() []Scanline {
 }
 
 func (r *RotatedRectangle) Area() float64 {
-	return -1.0
+	return float64(r.Sx * r.Sy)
 }

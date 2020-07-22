@@ -12,8 +12,8 @@ type Shape interface {
 }
 
 type BlueDotSessionsShapeConfig struct {
-	QuadPercent float64
-	StartTriangles int
+	StartRect int
+	EndRect int
 }
 
 type ShapeType int
@@ -29,4 +29,6 @@ const (
 	ShapeTypeRotatedEllipse
 	ShapeTypePolygon
 	ShapeTypeBlueDotSessions
+	ShapeTypeRightFacingTriangle
+	ShapeTypeBDSPolygon
 )

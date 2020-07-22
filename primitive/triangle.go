@@ -47,6 +47,7 @@ func (t *Triangle) Copy() Shape {
 }
 
 func (t *Triangle) Mutate() {
+	// vv("Triangle Mutate\n")
 	w := t.Worker.W
 	h := t.Worker.H
 	rnd := t.Worker.Rnd
@@ -99,6 +100,7 @@ func (t *Triangle) Valid() bool {
 		a2 = degrees(math.Acos(x1*x2 + y1*y2))
 	}
 	a3 = 180 - a1 - a2
+	// vv("Triangle Valid a1=%.2f, a2=%.2f, a3=%.2f\n", a1, a2, a3)
 	return a1 > minDegrees && a2 > minDegrees && a3 > minDegrees
 }
 
