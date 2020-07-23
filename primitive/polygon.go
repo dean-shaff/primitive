@@ -17,6 +17,8 @@ type Polygon struct {
 }
 
 const m = 0
+const minAngle = 15
+
 
 func NewRandomPolygon(worker *Worker, order int, convex bool) *Polygon {
 
@@ -25,8 +27,8 @@ func NewRandomPolygon(worker *Worker, order int, convex bool) *Polygon {
 	rnd := worker.Rnd
 	x := make([]float64, order)
 	y := make([]float64, order)
-	x[0] = rnd.Float64() * float64(worker.W)
-	y[0] = rnd.Float64() * float64(worker.H)
+	x[0] = rnd.Float64() * float64(w)
+	y[0] = rnd.Float64() * float64(h)
 	for i := 1; i < order; i++ {
 		x[i] = clamp(x[0] + rnd.Float64()*40 - 20, -m, float64(w-1+m))
 		y[i] = clamp(y[0] + rnd.Float64()*40 - 20, -m, float64(h-1+m))
@@ -80,6 +82,7 @@ func (p *Polygon) Mutate() {
 			p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*16, -m, float64(w-1+m))
 			p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*16, -m, float64(h-1+m))
 		}
+
 		if p.Valid() {
 			break
 		}
@@ -102,6 +105,17 @@ func (p *Polygon) Valid() bool {
 			return false
 		}
 	}
+	// check internal angles of polygon.
+	for a := 0; a < p.Order; a++ {
+		i := (a + 0) % p.Order
+		j := (a + 1) % p.Order
+		k := (a + 2) % p.Order
+		a := angleBetween(p.X[i], p.Y[i], p.X[j], p.Y[j], p.X[k], p.Y[k])
+		if a < minAngle {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -145,4 +159,28 @@ func (p *Polygon) Area() float64 {
 	area = math.Abs(area)/2.0
 
 	return area
+}
+
+func mag (x, y float64) float64 {
+	return math.Sqrt(math.Pow(x, 2) + math.Pow(y, 2))
+}
+
+func dot (x0, y0, x1, y1 float64) float64 {
+	return x0*x1 + y0*y1
+}
+
+// Get the angle created by vector between (x1, y1) -> (x0, y0) and (x1, y1) -> (x2, y2). Returns angle in degrees
+func angleBetween (x0, y0, x1, y1, x2, y2 float64) float64 {
+	x0 -= x1
+	y0 -= y1
+	x2 -= x1
+	y2 -= y1
+
+	mag0 := mag(x0, y0)
+	mag2 := mag(x2, y2)
+	dot02 := dot(x0, y0, x2, y2)
+
+	angle := degrees(math.Acos(dot02 / (mag0 * mag2)))
+
+	return angle
 }

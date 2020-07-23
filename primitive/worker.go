@@ -152,7 +152,7 @@ func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *Sta
 	case ShapeTypeRotatedEllipse:
 		return NewState(worker, NewRandomRotatedEllipse(worker), a)
 	case ShapeTypePolygon:
-		return NewState(worker, NewRandomPolygon(worker, worker.Rnd.Intn(4)+3, true), a)
+		return NewState(worker, NewRandomPolygon(worker, 4, true), a)
 	case ShapeTypeBlueDotSessions:
 		return NewState(worker, fn(worker, a, idx), a)
 	case ShapeTypeRightFacingTriangle:
