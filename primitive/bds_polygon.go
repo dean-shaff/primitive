@@ -8,7 +8,7 @@ type BDSPolygon struct {
   polygon Polygon
 }
 
-const incre = 40
+const incre = 10
 // const m = 0
 
 func NewRandomBDSPolygon(worker *Worker, order int, convex bool) *BDSPolygon {
@@ -29,7 +29,7 @@ func NewRandomBDSPolygon(worker *Worker, order int, convex bool) *BDSPolygon {
 		x[2] = x[0]
 		y[2] = y[1] + rnd.Float64() * incre
 
-		x[3] = x[0] - rnd.Float64() * 0.5*incre
+		x[3] = x[0] - rnd.Float64() * 0.5*incre - 0.3*incre
 		y[3] = y[1]
 		p = &Polygon{worker, order, convex, x, y}
 	}
@@ -64,61 +64,46 @@ func (bdsp *BDSPolygon) Mutate() {
 	h := p.Worker.H
 	rnd := p.Worker.Rnd
 	for {
-		i := rnd.Intn(p.Order)
+		idx := rnd.Intn(p.Order)
 
-		p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*incre, -m, float64(w-1+m))
-		p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*incre, -m, float64(h-1+m))
-
-		for idx := i; idx < p.Order; idx++ {
-			switch idx {
-			case 1:
-				p.X[1] = clamp(p.X[0] + rnd.Float64() * incre, -m, float64(w-1+m))
-				p.Y[1] = clamp(p.Y[0] + rnd.Float64() * incre, -m, float64(h-1+m))
-			case 2:
-				p.X[2] = p.X[0] //+ rnd.NormFloat64()*0.1*incre
-				p.Y[2] = p.Y[1] + rnd.Float64() * incre
-			case 3:
-				p.X[3] = p.X[2] - rnd.Float64()*0.5*incre
-				p.Y[3] = p.Y[1] //+ rnd.NormFloat64()*0.1*incre
+		if idx % 2 == 0 {
+			p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*incre, p.X[3] + 0.5*incre, p.X[1] - 0.5*incre)
+			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*incre, -m, float64(h-1+m))
+			p.X[(idx + 2) % p.Order] = p.X[idx]
+		} else {
+			if idx == 1 {
+				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*incre, -m, float64(w-1+m))
+			} else if idx == 3 {
+				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*incre, -m, p.X[0] - 0.5*incre)
 			}
-
-			// switch idx {
-			// case 1:
-			// 	p.X[1] = p.X[1] + p.X[0]
-			// 	p.Y[1] = p.Y[1] + p.Y[0]
-			// case 2:
-			// 	p.X[2] = p.X[0] //+ rnd.NormFloat64()*0.1*incre
-			// 	p.Y[2] = p.Y[2] + p.Y[1]
-			// case 3:
-			// 	p.X[3] = p.X[2]
-			// 	p.Y[3] = p.Y[1] //+ rnd.NormFloat64()*0.1*incre
-			// }
+			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*incre, p.Y[0] + 0.5*incre, p.X[2] - 0.5*incre)
+			p.Y[(idx + 2) % p.Order] = p.Y[idx]
 		}
 
-		if p.Valid() {
+		// p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*incre, -m, float64(w-1+m))
+		// p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*incre, -m, float64(h-1+m))
+		// for idx := i; idx < p.Order; idx++ {
+		// 	switch idx {
+		// 	case 1:
+		// 		p.X[1] = clamp(p.X[0] + rnd.Float64() * incre, -m, float64(w-1+m))
+		// 		p.Y[1] = clamp(p.Y[0] + rnd.Float64() * incre, -m, float64(h-1+m))
+		// 	case 2:
+		// 		p.X[2] = p.X[0] //+ rnd.NormFloat64()*0.1*incre
+		// 		p.Y[2] = p.Y[1] + rnd.Float64() * incre
+		// 	case 3:
+		// 		p.X[3] = p.X[2] - rnd.Float64()*0.5*incre
+		// 		p.Y[3] = p.Y[1] //+ rnd.NormFloat64()*0.1*incre
+		// 	}
+		// }
+
+		if bdsp.Valid() {
 			break
 		}
 	}
 }
 
 func (bdsp *BDSPolygon) Valid() bool {
-  p := bdsp.polygon
-	if !p.Convex {
-		return true
-	}
-	var sign bool
-	for a := 0; a < p.Order; a++ {
-		i := (a + 0) % p.Order
-		j := (a + 1) % p.Order
-		k := (a + 2) % p.Order
-		c := cross3(p.X[i], p.Y[i], p.X[j], p.Y[j], p.X[k], p.Y[k])
-		if a == 0 {
-			sign = c > 0
-		} else if c > 0 != sign {
-			return false
-		}
-	}
-	return true
+	return bdsp.polygon.Valid()
 }
 
 
