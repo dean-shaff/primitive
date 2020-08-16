@@ -84,12 +84,13 @@ func (worker *Worker) Energy(shape Shape, alpha int) float64 {
 	return differencePartial(worker.Target, worker.Current, worker.Buffer, worker.Score, lines)
 }
 
-func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int, fn NewShapeFunc) *State {
+func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int, fn NewShapeFunc, rand_val float64) *State {
 	var bestEnergy float64
 	var bestState *State
-	vv("BestHillClimbState: n=%d, m=%d\n", n, m)
+	// rand_val := worker.Rnd.Float64()
+	v("BestHillClimbState: n=%d, m=%d, r=%f\n", n, m, rand_val)
 	for i := 0; i < m; i++ {
-		state := worker.BestRandomState(t, a, n, idx, fn)
+		state := worker.BestRandomState(t, a, n, idx, fn, rand_val)
 		before := state.Energy()
 		area_before := state.Shape.Area()
 		state = HillClimb(state, age).(*State)
@@ -104,11 +105,12 @@ func (worker *Worker) BestHillClimbState(t ShapeType, a, n, age, m, idx int, fn 
 	return bestState
 }
 
-func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFunc) *State {
+func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFunc, rand_val float64) *State {
 	var bestEnergy float64
 	var bestState *State
+
 	for i := 0; i < n; i++ {
-		state := worker.RandomState(t, a, idx, fn)
+		state := worker.RandomState(t, a, idx, fn, rand_val)
 		energy := state.Energy()
 		// vv("BestRandomState: i=%d energy=%.2f, bestEnergy=%.2f\n", i, energy, bestEnergy)
 		if i == 0 || energy < bestEnergy {
@@ -127,10 +129,10 @@ func NewBlueDotSessionsShapeFactory (modes []int, percs []float64) NewShapeFunc 
 		cum_percs = append(cum_percs, cur_cum_val)
 	}
 	// fmt.Println(cum_percs)
-	return func (worker *Worker, a, idx int) Shape {
+	return func (worker *Worker, a, idx int, rand_val float64) Shape {
 		// vv("NewBlueDotSessionsShapeFactory")
-		rnd := worker.Rnd
-		rand_val := rnd.Float64()
+		// rnd := worker.Rnd
+		// rand_val := rnd.Float64()
 		for idy, val := range cum_percs {
 			if rand_val <= val {
 				return worker.SimpleRandomShape(ShapeType(modes[idy]))
@@ -140,7 +142,7 @@ func NewBlueDotSessionsShapeFactory (modes []int, percs []float64) NewShapeFunc 
 	}
 }
 
-type NewShapeFunc func(worker* Worker, a, idx int) Shape
+type NewShapeFunc func(worker* Worker, a, idx int, rand_val float64) Shape
 
 func (worker *Worker) SimpleRandomShape(t ShapeType) Shape {
 	switch t {
@@ -170,10 +172,10 @@ func (worker *Worker) SimpleRandomShape(t ShapeType) Shape {
 }
 
 
-func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *State {
+func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc, rand_val float64) *State {
 	// vv("RandomState: a=%d\n", a)
 	if t == ShapeTypeBlueDotSessions {
-		return NewState(worker, fn(worker, a, idx), a)
+		return NewState(worker, fn(worker, a, idx, rand_val), a)
 	} else {
 		return NewState(worker, worker.SimpleRandomShape(t), a)
 	}

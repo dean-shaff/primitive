@@ -154,10 +154,11 @@ func (model *Model) runWorkers(t ShapeType, a, n, age, m, idx int, fn NewShapeFu
 	if m%wn != 0 {
 		wm++
 	}
+	rand_val := model.Workers[0].Rnd.Float64()
 	for i := 0; i < wn; i++ {
 		worker := model.Workers[i]
 		worker.Init(model.Current, model.Score)
-		go model.runWorker(worker, t, a, n, age, wm, idx, fn, ch)
+		go model.runWorker(worker, t, a, n, age, wm, idx, fn, rand_val, ch)
 	}
 	var bestEnergy float64
 	var bestState *State
@@ -172,6 +173,6 @@ func (model *Model) runWorkers(t ShapeType, a, n, age, m, idx int, fn NewShapeFu
 	return bestState
 }
 
-func (model *Model) runWorker(worker *Worker, t ShapeType, a, n, age, m, idx int, fn NewShapeFunc, ch chan *State) {
-	ch <- worker.BestHillClimbState(t, a, n, age, m, idx, fn)
+func (model *Model) runWorker(worker *Worker, t ShapeType, a, n, age, m, idx int, fn NewShapeFunc, rand_val float64, ch chan *State) {
+	ch <- worker.BestHillClimbState(t, a, n, age, m, idx, fn, rand_val)
 }
