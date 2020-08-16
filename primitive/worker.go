@@ -4,6 +4,7 @@ import (
 	"image"
 	"math/rand"
 	"time"
+	// "fmt"
 
 	"github.com/golang/freetype/raster"
 )
@@ -118,47 +119,62 @@ func (worker *Worker) BestRandomState(t ShapeType, a, n, idx int, fn NewShapeFun
 	return bestState
 }
 
-func NewBlueDotSessionsShapeFactory (startRect int, endRect int) NewShapeFunc {
+func NewBlueDotSessionsShapeFactory (modes []int, percs []float64) NewShapeFunc {
+	var cum_percs []float64
+	cur_cum_val := 0.0
+	for idx, _ := range percs {
+		cur_cum_val += percs[idx]
+		cum_percs = append(cum_percs, cur_cum_val)
+	}
+	// fmt.Println(cum_percs)
 	return func (worker *Worker, a, idx int) Shape {
 		// vv("NewBlueDotSessionsShapeFactory")
-		if (idx >= startRect && idx <= endRect) {
-			return NewRandomRotatedRectangle(worker)
-		} else {
-			return NewRandomPolygon(worker, 4, true)
+		rnd := worker.Rnd
+		rand_val := rnd.Float64()
+		for idy, val := range cum_percs {
+			if rand_val <= val {
+				return worker.SimpleRandomShape(ShapeType(modes[idy]))
+			}
 		}
+		return worker.SimpleRandomShape(ShapeType(modes[len(modes) - 1]))
 	}
 }
 
 type NewShapeFunc func(worker* Worker, a, idx int) Shape
 
+func (worker *Worker) SimpleRandomShape(t ShapeType) Shape {
+	switch t {
+	default:
+		return worker.SimpleRandomShape(ShapeType(worker.Rnd.Intn(8)+1))
+	case ShapeTypeTriangle:
+		return NewRandomTriangle(worker)
+	case ShapeTypeRectangle:
+		return NewRandomRectangle(worker)
+	case ShapeTypeEllipse:
+		return NewRandomEllipse(worker)
+	case ShapeTypeCircle:
+		return NewRandomCircle(worker)
+	case ShapeTypeRotatedRectangle:
+		return NewRandomRotatedRectangle(worker)
+	case ShapeTypeQuadratic:
+		return NewRandomQuadratic(worker)
+	case ShapeTypeRotatedEllipse:
+		return NewRandomRotatedEllipse(worker)
+	case ShapeTypePolygon:
+		return NewRandomPolygon(worker, 4, true, 15, 40, 0)
+	case ShapeTypeRightFacingTriangle:
+		return NewRandomRFTriangle(worker)
+	case ShapeTypeDiamond:
+		return NewRandomDiamond(worker, 4, true, 15, 20, 0)
+	}
+}
+
 
 func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc) *State {
 	// vv("RandomState: a=%d\n", a)
-	switch t {
-	default:
-		return worker.RandomState(ShapeType(worker.Rnd.Intn(8)+1), a, idx, fn)
-	case ShapeTypeTriangle:
-		return NewState(worker, NewRandomTriangle(worker), a)
-	case ShapeTypeRectangle:
-		return NewState(worker, NewRandomRectangle(worker), a)
-	case ShapeTypeEllipse:
-		return NewState(worker, NewRandomEllipse(worker), a)
-	case ShapeTypeCircle:
-		return NewState(worker, NewRandomCircle(worker), a)
-	case ShapeTypeRotatedRectangle:
-		return NewState(worker, NewRandomRotatedRectangle(worker), a)
-	case ShapeTypeQuadratic:
-		return NewState(worker, NewRandomQuadratic(worker), a)
-	case ShapeTypeRotatedEllipse:
-		return NewState(worker, NewRandomRotatedEllipse(worker), a)
-	case ShapeTypePolygon:
-		return NewState(worker, NewRandomPolygon(worker, 4, true), a)
-	case ShapeTypeBlueDotSessions:
+	if t == ShapeTypeBlueDotSessions {
 		return NewState(worker, fn(worker, a, idx), a)
-	case ShapeTypeRightFacingTriangle:
-		return NewState(worker, NewRandomRFTriangle(worker), a)
-	case ShapeTypeBDSPolygon:
-		return NewState(worker, NewRandomBDSPolygon(worker, 4, true), a)
-
+	} else {
+		return NewState(worker, worker.SimpleRandomShape(t), a)
 	}
 }

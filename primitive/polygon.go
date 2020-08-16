@@ -13,14 +13,17 @@ type Polygon struct {
 	Worker *Worker
 	Order  int
 	Convex bool
+	MinAngle float64
+	SizeFactor float64
+	BoundsFactor int
 	X, Y   []float64
 }
 
-const m = 0
-const minAngle = 15
+// const m = 0
+// const minAngle = 15
 
 
-func NewRandomPolygon(worker *Worker, order int, convex bool) *Polygon {
+func NewRandomPolygon(worker *Worker, order int, convex bool, minAngle float64, sizeFactor float64, boundsFactor int) *Polygon {
 
 	w := worker.W
 	h := worker.H
@@ -30,10 +33,10 @@ func NewRandomPolygon(worker *Worker, order int, convex bool) *Polygon {
 	x[0] = rnd.Float64() * float64(w)
 	y[0] = rnd.Float64() * float64(h)
 	for i := 1; i < order; i++ {
-		x[i] = clamp(x[0] + rnd.Float64()*40 - 20, -m, float64(w-1+m))
-		y[i] = clamp(y[0] + rnd.Float64()*40 - 20, -m, float64(h-1+m))
+		x[i] = clamp(x[0] + rnd.Float64()*sizeFactor - sizeFactor/2, float64(-boundsFactor), float64(w-1+boundsFactor))
+		y[i] = clamp(y[0] + rnd.Float64()*sizeFactor - sizeFactor/2, float64(-boundsFactor), float64(h-1+boundsFactor))
 	}
-	p := &Polygon{worker, order, convex, x, y}
+	p := &Polygon{worker, order, convex, minAngle, sizeFactor, boundsFactor, x, y}
 	p.Mutate()
 	return p
 }
@@ -71,6 +74,8 @@ func (p *Polygon) Copy() Shape {
 func (p *Polygon) Mutate() {
 	w := p.Worker.W
 	h := p.Worker.H
+	boundsFactor := p.BoundsFactor
+	sizeFactor := p.SizeFactor
 	rnd := p.Worker.Rnd
 	for {
 		if rnd.Float64() < 0.25 {
@@ -79,8 +84,8 @@ func (p *Polygon) Mutate() {
 			p.X[i], p.Y[i], p.X[j], p.Y[j] = p.X[j], p.Y[j], p.X[i], p.Y[i]
 		} else {
 			i := rnd.Intn(p.Order)
-			p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*16, -m, float64(w-1+m))
-			p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*16, -m, float64(h-1+m))
+			p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*sizeFactor/2, float64(-boundsFactor), float64(w-1+boundsFactor))
+			p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*sizeFactor/2, float64(-boundsFactor), float64(h-1+boundsFactor))
 		}
 
 		if p.Valid() {
@@ -111,7 +116,7 @@ func (p *Polygon) Valid() bool {
 		j := (a + 1) % p.Order
 		k := (a + 2) % p.Order
 		a := angleBetween(p.X[i], p.Y[i], p.X[j], p.Y[j], p.X[k], p.Y[k])
-		if a < minAngle {
+		if a < p.MinAngle {
 			return false
 		}
 	}

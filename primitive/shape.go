@@ -28,7 +28,7 @@ const (
 	ShapeTypeQuadratic
 	ShapeTypeRotatedEllipse
 	ShapeTypePolygon
-	ShapeTypeBlueDotSessions
 	ShapeTypeRightFacingTriangle
-	ShapeTypeBDSPolygon
+	ShapeTypeDiamond
+	ShapeTypeBlueDotSessions
 )

@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"errors"
 
 	"./primitive"
 	"github.com/nfnt/resize"
@@ -78,7 +79,7 @@ func init() {
 	flag.StringVar(&AreaThresh, "at", "0.0", "area cut off threshold. Can specify a single value for upper threshold, or comma separated values for both lower and upper thresholds")
 	flag.IntVar(&InputSize, "r", 256, "resize large input images to this size")
 	flag.IntVar(&OutputSize, "s", 1024, "output image size")
-	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=blue-dot-sessions 10=right-facing-triangle 11=blue-dot-sessions-polygon")
+	flag.StringVar(&Mode, "m", "1", "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon 9=right-facing-triangle 10=diamond 11=blue-dot-sessions")
 	flag.IntVar(&Workers, "j", 0, "number of parallel workers (default uses all cores)")
 	flag.IntVar(&Nth, "nth", 1, "save every Nth frame (put \"%d\" in path)")
 	flag.IntVar(&ShapeTrials, "st", 1000, "Number of shapes to generate before applying Hill Climb algorithm")
@@ -101,19 +102,33 @@ func check(err error) {
 	}
 }
 
-func parseBlueDotSessionsModeParams (modeStr string) (int, int, int) {
-	split := strings.Split(modeStr, ":")
+func parseBlueDotSessionsModeParams (modeStr string) (int, []int, []float64) {
+	split := strings.Split(modeStr, ",")
 	mode, err := strconv.Atoi(split[0])
 	check(err)
-	var startRect int = 5
-	var endRect int  = 15
-	if len(split) == 3 {
-		startRect, err = strconv.Atoi(split[1])
+	split = split[1:]
+
+  var modes []int
+  var percs []float64
+
+	var sub_mode int
+	var sub_perc float64
+
+  for _, val := range split {
+    sub_split := strings.Split(val, ":")
+    sub_mode, err = strconv.Atoi(sub_split[0])
+		if (sub_mode == 11) {
+			err = errors.New("Cannot use Blue Dot Sessions mode inside Blue Dot Sessions mode")
+			log.Fatal(err)
+		}
 		check(err)
-		endRect, err = strconv.Atoi(split[2])
+    sub_perc, err = strconv.ParseFloat(sub_split[1], 64)
 		check(err)
-	}
-	return mode, startRect, endRect
+    modes = append(modes, sub_mode)
+    percs = append(percs, sub_perc)
+  }
+
+	return mode, modes, percs
 }
 
 func parseAreaThresh (areaThresh string) (float64, float64) {
@@ -210,20 +225,20 @@ func main() {
 	start := time.Now()
 	frame := 0
 	var mode int
-	var startRect int = 5
-	var endRect int = 15
+	var modes []int
+	var percs []float64
 
 	for j, config := range Configs {
 		primitive.Log(1, "count=%d, mode=%s, alpha=%d, repeat=%d\n",
 			config.Count, config.Mode, config.Alpha, config.Repeat)
 
-		if (strings.IndexAny(config.Mode, ":") != -1) {
-			mode, startRect, endRect = parseBlueDotSessionsModeParams(config.Mode)
+		if (strings.IndexAny(config.Mode, ",") != -1) {
+			mode, modes, percs = parseBlueDotSessionsModeParams(config.Mode)
 		} else {
 			mode, err = strconv.Atoi(config.Mode)
 			check(err)
 		}
-		newShapeFunc := primitive.NewBlueDotSessionsShapeFactory(startRect, endRect)
+		newShapeFunc := primitive.NewBlueDotSessionsShapeFactory(modes, percs)
 		primitive.Log(1, "parsed mode=%d\n",  mode)
 
 
