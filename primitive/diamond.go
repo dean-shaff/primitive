@@ -16,26 +16,35 @@ func NewRandomDiamond(worker *Worker, order int, convex bool, minAngle, sizeFact
 		w := worker.W
 		h := worker.H
 		rnd := worker.Rnd
-		x := make([]float64, order)
-		y := make([]float64, order)
-		x[0] = rnd.Float64() * float64(w)
-		y[0] = rnd.Float64() * float64(h)
 
-		x[1] = x[0] + rnd.Float64() * sizeFactor
-		y[1] = y[0] + rnd.Float64() * sizeFactor
-
-		x[2] = x[0]
-		y[2] = y[1] + rnd.Float64() * sizeFactor
-
-		x[3] = x[0] - rnd.Float64() * 0.5*sizeFactor - 0.3*sizeFactor
-		y[3] = y[1]
+		x0 := rnd.Float64() * float64(w)
+		y0 := rnd.Float64() * float64(h)
+		x, y := Init(worker, x0, y0, sizeFactor)
+		// vv("NewRandomDiamond: x=%f, y=%f\n", x, y)
 		p = &Polygon{worker, order, convex, minAngle, sizeFactor, boundsFactor, x, y}
 	}
 	diam := &Diamond{*p}
 	diam.Mutate()
 	return diam
+}
 
+func Init(worker *Worker, x0, y0, sizeFactor float64) ([]float64, []float64) {
+	rnd := worker.Rnd
 
+	x := make([]float64, 4)
+	y := make([]float64, 4)
+	x[0] = x0
+	y[0] = y0
+
+	x[1] = x[0] + rnd.Float64() * sizeFactor + 0.1*sizeFactor
+	y[1] = y[0] + rnd.Float64() * sizeFactor + 0.1*sizeFactor
+
+	x[2] = x[0]
+	y[2] = y[1] + rnd.Float64() * sizeFactor
+
+	x[3] = x[0] - (rnd.Float64()*0.2*sizeFactor) - 0.1*sizeFactor
+	y[3] = y[1]
+	return x, y
 }
 
 func (diam *Diamond) Draw(dc *gg.Context, scale float64) {
@@ -63,39 +72,28 @@ func (diam *Diamond) Mutate() {
 	rnd := p.Worker.Rnd
 	sizeFactor := p.SizeFactor
 	boundsFactor := p.BoundsFactor
+	boundsFactorf := float64(boundsFactor)
+	var delta_x1 float64
 	for {
 		idx := rnd.Intn(p.Order)
-
 		if idx % 2 == 0 {
-			p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, p.X[3] + 0.5*sizeFactor, p.X[1] - 0.5*sizeFactor)
-			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*sizeFactor, float64(-boundsFactor), float64(h-1+boundsFactor))
+			p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, p.X[3], p.X[1])
+			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*sizeFactor, -boundsFactorf, float64(h-1+boundsFactor))
 			p.X[(idx + 2) % p.Order] = p.X[idx]
 		} else {
 			if idx == 1 {
-				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, float64(-boundsFactor), float64(w-1+boundsFactor))
+				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, -boundsFactorf, float64(w-1+boundsFactor))
 			} else if idx == 3 {
-				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, float64(-boundsFactor), p.X[0] - 0.5*sizeFactor)
+				delta_x1 = p.X[1] - p.X[0]
+				low_bound_3 := p.X[0] - (delta_x1 * 0.5)
+				if low_bound_3 < -boundsFactorf {
+					low_bound_3 = -boundsFactorf
+				}
+				p.X[idx] = clamp(p.X[idx]+rnd.NormFloat64()*sizeFactor, low_bound_3, p.X[0] - 0.1*sizeFactor)
 			}
-			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*sizeFactor, p.Y[0] + 0.5*sizeFactor, p.X[2] - 0.5*sizeFactor)
+			p.Y[idx] = clamp(p.Y[idx]+rnd.NormFloat64()*sizeFactor, p.Y[0] + 0.3*sizeFactor, p.Y[2] - 0.3*sizeFactor)
 			p.Y[(idx + 2) % p.Order] = p.Y[idx]
 		}
-
-		// p.X[i] = clamp(p.X[i]+rnd.NormFloat64()*incre, -m, float64(w-1+m))
-		// p.Y[i] = clamp(p.Y[i]+rnd.NormFloat64()*incre, -m, float64(h-1+m))
-		// for idx := i; idx < p.Order; idx++ {
-		// 	switch idx {
-		// 	case 1:
-		// 		p.X[1] = clamp(p.X[0] + rnd.Float64() * incre, -m, float64(w-1+m))
-		// 		p.Y[1] = clamp(p.Y[0] + rnd.Float64() * incre, -m, float64(h-1+m))
-		// 	case 2:
-		// 		p.X[2] = p.X[0] //+ rnd.NormFloat64()*0.1*incre
-		// 		p.Y[2] = p.Y[1] + rnd.Float64() * incre
-		// 	case 3:
-		// 		p.X[3] = p.X[2] - rnd.Float64()*0.5*incre
-		// 		p.Y[3] = p.Y[1] //+ rnd.NormFloat64()*0.1*incre
-		// 	}
-		// }
-
 		if diam.Valid() {
 			break
 		}
@@ -103,6 +101,12 @@ func (diam *Diamond) Mutate() {
 }
 
 func (diam *Diamond) Valid() bool {
+	p := diam.polygon
+	delta_x1 := p.X[1] - p.X[0]
+	delta_x3 := p.X[0] - p.X[3]
+	if delta_x3 > delta_x1 {
+		return false
+	}
 	return diam.polygon.Valid()
 }
 

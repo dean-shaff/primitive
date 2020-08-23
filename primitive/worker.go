@@ -173,7 +173,7 @@ func (worker *Worker) SimpleRandomShape(t ShapeType) Shape {
 
 
 func (worker *Worker) RandomState(t ShapeType, a, idx int, fn NewShapeFunc, rand_val float64) *State {
-	// vv("RandomState: a=%d\n", a)
+	vv("RandomState: idx=%d\n", idx)
 	if t == ShapeTypeBlueDotSessions {
 		return NewState(worker, fn(worker, a, idx, rand_val), a)
 	} else {

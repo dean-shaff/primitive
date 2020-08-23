@@ -72,6 +72,7 @@ func (p *Polygon) Copy() Shape {
 }
 
 func (p *Polygon) Mutate() {
+	// vv("Polygon.Mutate")
 	w := p.Worker.W
 	h := p.Worker.H
 	boundsFactor := p.BoundsFactor
@@ -120,6 +121,18 @@ func (p *Polygon) Valid() bool {
 			return false
 		}
 	}
+
+	w, h := float64(p.Worker.W), float64(p.Worker.H)
+	boundsFactor := float64(p.BoundsFactor)
+	for idx := 0; idx < p.Order; idx++ {
+		if p.X[idx] < -boundsFactor || p.X[idx] > w + boundsFactor {
+			return false
+		}
+		if p.Y[idx] < -boundsFactor || p.Y[idx] > h + boundsFactor {
+			return false
+		}
+	}
+
 
 	return true
 }
